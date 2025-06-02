@@ -68,7 +68,7 @@ A table showing total sales per postal code.
 * **Python**
 * **Pandas**
 * **SQLite** (via SQLAlchemy)
-* **OpenAI GPT-3.5 Turbo / GPT-3.5 Turbo-Instruct**
+* **OpenAI GPT-3.5 Turbo / GPT-4o-mini**
 
 ---
 

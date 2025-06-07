@@ -108,6 +108,12 @@ openai.api_key = "your-api-key"
 
 ---
 
+## 🧑‍💻 Author
+
+Made with ❤️ by Anas and ChatGPT 🙌
+
+---
+
 ## 🌐 License
 
 MIT License. Free to use, modify, and share.

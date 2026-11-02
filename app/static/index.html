@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Text-to-SQL Sales Analyzer</title>
+  <meta name="description" content="Ask questions about sales data in English or Arabic. An AI model writes the SQL, and the app runs it read-only.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2317233A'/%3E%3Cpath d='M9 11h14M9 16h9M9 21h14' stroke='%23EEF1F4' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preload" href="/fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <main class="page">
+    <header class="masthead">
+      <h1 data-i18n="title">Text-to-SQL Sales Analyzer</h1>
+      <button type="button" class="lang-switch" id="lang-switch" lang="ar">العربية</button>
+    </header>
+    <p class="lede" data-i18n="lede">Ask a question about 2,823 sales records in English or Arabic. An AI model writes the SQL query, and the app runs it on the data.</p>
+
+    <form class="ask" id="ask-form" autocomplete="off">
+      <label class="visually-hidden" for="question" data-i18n="questionLabel">Your question</label>
+      <input id="question" name="question" type="text" maxlength="300" dir="auto" required>
+      <button type="submit" id="ask-button" data-i18n="ask">Ask</button>
+    </form>
+
+    <div class="examples">
+      <span class="examples-label" data-i18n="examplesLabel">Try one:</span>
+      <div class="chips" id="examples"></div>
+    </div>
+
+    <section class="result" id="result" aria-live="polite"></section>
+
+    <details class="about">
+      <summary data-i18n="aboutTitle">About the data</summary>
+      <p data-i18n="aboutData"></p>
+      <p data-i18n="aboutSafety"></p>
+    </details>
+
+    <footer class="colophon">
+      <p data-i18n-html="footer"></p>
+    </footer>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

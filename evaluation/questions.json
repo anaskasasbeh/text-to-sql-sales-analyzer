@@ -4,28 +4,36 @@
     "category": "aggregation",
     "en": "What are the total sales?",
     "ar": "قديش مجموع المبيعات الكلي؟",
-    "gold": ["SELECT SUM(SALES) FROM sales"]
+    "gold": [
+      "SELECT SUM(SALES) FROM sales"
+    ]
   },
   {
     "id": "q02",
     "category": "data trap",
     "en": "How many orders are there?",
     "ar": "كم طلبية عنا بالمجمل؟",
-    "gold": ["SELECT COUNT(DISTINCT ORDERNUMBER) FROM sales"]
+    "gold": [
+      "SELECT COUNT(DISTINCT ORDERNUMBER) FROM sales"
+    ]
   },
   {
     "id": "q03",
     "category": "aggregation",
     "en": "How many different customers have placed orders?",
     "ar": "كم زبون مختلف طلب منا؟",
-    "gold": ["SELECT COUNT(DISTINCT CUSTOMERNAME) FROM sales"]
+    "gold": [
+      "SELECT COUNT(DISTINCT CUSTOMERNAME) FROM sales"
+    ]
   },
   {
     "id": "q04",
     "category": "grouping",
     "en": "What are the total sales for each product line?",
     "ar": "إجمالي المبيعات لكل خط منتجات",
-    "gold": ["SELECT PRODUCTLINE, SUM(SALES) FROM sales GROUP BY PRODUCTLINE"]
+    "gold": [
+      "SELECT PRODUCTLINE, SUM(SALES) FROM sales GROUP BY PRODUCTLINE"
+    ]
   },
   {
     "id": "q05",
@@ -51,14 +59,18 @@
     "category": "data trap",
     "en": "How many orders were cancelled?",
     "ar": "كم طلبية انلغت؟",
-    "gold": ["SELECT COUNT(DISTINCT ORDERNUMBER) FROM sales WHERE STATUS = 'Cancelled'"]
+    "gold": [
+      "SELECT COUNT(DISTINCT ORDERNUMBER) FROM sales WHERE STATUS = 'Cancelled'"
+    ]
   },
   {
     "id": "q08",
     "category": "data trap",
     "en": "What were the total sales in North America?",
     "ar": "قديش مبيعات أمريكا الشمالية؟",
-    "gold": ["SELECT SUM(SALES) FROM sales WHERE TERRITORY = 'NA'"]
+    "gold": [
+      "SELECT SUM(SALES) FROM sales WHERE TERRITORY = 'NA'"
+    ]
   },
   {
     "id": "q09",
@@ -75,7 +87,9 @@
     "category": "data trap",
     "en": "What is the average order value?",
     "ar": "قديش متوسط قيمة الطلبية؟",
-    "gold": ["SELECT SUM(SALES) / COUNT(DISTINCT ORDERNUMBER) FROM sales"]
+    "gold": [
+      "SELECT SUM(SALES) / COUNT(DISTINCT ORDERNUMBER) FROM sales"
+    ]
   },
   {
     "id": "q11",
@@ -91,7 +105,9 @@
     "category": "filtering",
     "en": "How many customers are based in Spain?",
     "ar": "كم زبون موجود في إسبانيا؟",
-    "gold": ["SELECT COUNT(DISTINCT CUSTOMERNAME) FROM sales WHERE COUNTRY = 'Spain'"]
+    "gold": [
+      "SELECT COUNT(DISTINCT CUSTOMERNAME) FROM sales WHERE COUNTRY = 'Spain'"
+    ]
   },
   {
     "id": "q13",
@@ -160,6 +176,20 @@
     "category": "unanswerable",
     "en": "Which sales rep closed the most deals?",
     "ar": "مين مندوب المبيعات اللي سكّر أكثر صفقات؟",
+    "gold": []
+  },
+  {
+    "id": "q21",
+    "category": "unanswerable",
+    "en": "What is the average customer rating for each product line?",
+    "ar": "شو متوسط تقييم الزباين لكل خط منتجات؟",
+    "gold": []
+  },
+  {
+    "id": "q22",
+    "category": "unanswerable",
+    "en": "How many days does shipping take on average?",
+    "ar": "كم يوم بياخذ الشحن بالمعدل؟",
     "gold": []
   }
 ]

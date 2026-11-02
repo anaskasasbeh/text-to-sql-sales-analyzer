@@ -62,5 +62,6 @@ def test_full_prompt_describes_data_traps_and_names_prompt_does_not():
     assert "'NA' (North America)" in full
     assert "COUNT(DISTINCT ORDERNUMBER)" in full
     assert "PRICEEACH is capped" in full
+    assert "no costs or profit" in full
     assert "North America" not in names
     assert "sales (ORDERNUMBER, QUANTITYORDERED" in names

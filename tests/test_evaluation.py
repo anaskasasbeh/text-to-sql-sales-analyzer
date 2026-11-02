@@ -9,9 +9,9 @@ QUESTIONS = load_questions()
 
 
 def test_question_set_shape():
-    assert len(QUESTIONS) == 20
-    assert len({q.id for q in QUESTIONS}) == 20
-    assert sum(not q.answerable for q in QUESTIONS) == 2
+    assert len(QUESTIONS) == 22
+    assert len({q.id for q in QUESTIONS}) == 22
+    assert sum(not q.answerable for q in QUESTIONS) == 4
     assert all(q.en and q.ar for q in QUESTIONS)
 
 

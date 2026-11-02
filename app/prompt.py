@@ -79,6 +79,8 @@ DATA_NOTES = """Data notes:
   because PRICEEACH is capped at 100.
 - The data covers 2003-01-06 to 2005-05-31, so 2005 has January to May only.
   Use YEAR_ID, QTR_ID and MONTH_ID, or strftime() on ORDERDATE.
+- The table has no costs or profit, no salespeople and no stock levels. A question that
+  needs them cannot be answered: do not use SALES in their place.
 - A customer is CUSTOMERNAME. Cities use local or short spellings, for example
   'NYC' (New York), 'Kobenhavn' (Copenhagen), 'Koln' (Cologne), 'Torino' (Turin),
   'Bruxelles' (Brussels), 'Gensve' (Geneva)."""

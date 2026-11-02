@@ -46,7 +46,11 @@ def build_report(runs: dict[tuple[str, str], list[dict]]) -> str:
     if not runs:
         return "# Evaluation\n\nNo runs yet. Run `python -m evaluation.run_eval`.\n"
 
-    last_run = max(r["run_at"] for records in runs.values() for r in records)
+    all_records = [r for records in runs.values() for r in records]
+    last_run = max(r["run_at"] for r in all_records)
+    question_ids = {r["id"] for r in all_records}
+    unanswerable_ids = {r["id"] for r in all_records if not r["answerable"]}
+    total, refusals = len(question_ids), len(unanswerable_ids)
     lines = [
         "# Evaluation",
         "",
@@ -54,10 +58,12 @@ def build_report(runs: dict[tuple[str, str], list[dict]]) -> str:
         "",
         "## Method",
         "",
-        "- 20 questions about the `sales` table, each asked in English and in Arabic"
-        " (Modern Standard and Jordanian dialect): 40 runs per configuration.",
-        "- 18 questions can be answered from the table. 2 cannot (profit, sales reps),"
-        " and the right behaviour is to refuse.",
+        f"- {total} questions about the `sales` table, each asked in English and in Arabic"
+        f" (Modern Standard and Jordanian dialect): {2 * total} runs per configuration.",
+        f"- {total - refusals} questions can be answered from the table. {refusals} cannot,"
+        " and the right behaviour is to refuse. The prompt lists what the table does not"
+        " contain (costs or profit, salespeople, stock): q19 and q20 ask about items on that"
+        " list, while q21 and q22 ask about things no note mentions (ratings, shipping time).",
         "- **Execution accuracy**: the model's query returns the same result as a"
         " hand-written gold query. Rows are compared as a set (in order for ranked lists),"
         " numbers are rounded to 2 decimals, and extra columns are allowed.",

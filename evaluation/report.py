@@ -24,6 +24,11 @@ def load_runs(runs_dir: Path = RUNS_DIR) -> dict[tuple[str, str], list[dict]]:
     return dict(runs)
 
 
+def _fingerprints(records: list[dict]) -> str:
+    pairs = sorted({(r["prompt_style"], r.get("prompt_hash", "none")) for r in records})
+    return ", ".join(f"{style} `{fingerprint}`" for style, fingerprint in pairs)
+
+
 def _pct(part: int, whole: int) -> str:
     return f"{100 * part / whole:.1f}% ({part}/{whole})" if whole else "n/a"
 
@@ -68,6 +73,8 @@ def build_report(runs: dict[tuple[str, str], list[dict]]) -> str:
         " hand-written gold query. Rows are compared as a set (in order for ranked lists),"
         " numbers are rounded to 2 decimals, and extra columns are allowed.",
         "- **First try**: correct without the self-correction retry.",
+        "- Each result stores a fingerprint of the exact prompt; results from an older prompt"
+        f" are run again. Fingerprints in this report: {_fingerprints(all_records)}.",
         "- Models run on Groq's free tier with `reasoning_effort=low` and `temperature=0`.",
         "",
         "## Results",

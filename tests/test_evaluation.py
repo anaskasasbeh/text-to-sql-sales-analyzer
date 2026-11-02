@@ -1,9 +1,12 @@
+import json
+
 import pytest
 
 from app.database import connect_readonly
 from app.sql_guard import validate_sql
 from evaluation.compare import load_questions, normalize, results_match
 from evaluation.report import build_report
+from evaluation.run_eval import keep_matching_results, prompt_fingerprint
 
 QUESTIONS = load_questions()
 
@@ -73,3 +76,23 @@ def test_report_summarizes_runs():
     report = build_report({("openai/gpt-oss-120b", "full"): [record]})
     assert "| gpt-oss-120b | full | All | 100.0% (1/1) | 100.0% (1/1) |" in report
     assert "| q01 | aggregation | What are the total sales? | ✓ |  |" in report
+
+
+def test_fingerprint_changes_with_the_prompt_or_settings():
+    assert prompt_fingerprint("full", "low") == prompt_fingerprint("full", "low")
+    assert prompt_fingerprint("full", "low") != prompt_fingerprint("names", "low")
+    assert prompt_fingerprint("full", "low") != prompt_fingerprint("full", "medium")
+
+
+def test_results_from_another_prompt_are_run_again(tmp_path):
+    current = prompt_fingerprint("full", "low")
+    lines = [
+        {"id": "q01", "lang": "en", "model": "m", "prompt_hash": current},
+        {"id": "q02", "lang": "en", "model": "m", "prompt_hash": "old-prompt"},
+        {"id": "q03", "lang": "en", "model": "m"},  # saved before fingerprints existed
+    ]
+    path = tmp_path / "run.jsonl"
+    path.write_text("".join(json.dumps(line) + "\n" for line in lines), encoding="utf-8")
+
+    assert keep_matching_results(path, "m", current) == {("q01", "en")}
+    assert len(path.read_text(encoding="utf-8").splitlines()) == 1

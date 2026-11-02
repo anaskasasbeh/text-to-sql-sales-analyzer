@@ -7,11 +7,15 @@ Usage (from the project root, with GROQ_API_KEY in .env):
 
 The run is throttled to stay inside Groq's free-tier limits. If it stops (daily limit,
 network), run the same command again: finished questions are kept and skipped.
+
+Every result stores a fingerprint of the exact prompt and model settings. Results saved
+with a different fingerprint (for example after a prompt change) are run again.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 import time
@@ -21,7 +25,7 @@ from pathlib import Path
 from app.config import PROJECT_ROOT, load_settings
 from app.database import build_database, connect_readonly, load_sales_data
 from app.llm import GroqClient, LLMNotConfigured, LLMRateLimited, LLMReply, LLMUnavailable
-from app.prompt import PromptStyle
+from app.prompt import PromptStyle, build_prompt
 from app.sql_guard import NoSQLFound, SQLExecutionError, UnsafeSQL
 from app.text_to_sql import TextToSQL, Unanswerable
 from evaluation.compare import Question, load_questions, results_match
@@ -62,6 +66,31 @@ def run_file(model: str, style: str) -> Path:
     return RUNS_DIR / f"{model.split('/')[-1]}__{style}.jsonl"
 
 
+def prompt_fingerprint(style: PromptStyle, reasoning_effort: str) -> str:
+    """Short hash of the prompt template and model settings used for a run."""
+    text = f"{build_prompt('<question>', style)}|reasoning_effort={reasoning_effort}"
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
+
+
+def keep_matching_results(path: Path, model: str, fingerprint: str) -> set[tuple[str, str]]:
+    """Drop saved results from another prompt or model; return the (id, lang) pairs kept."""
+    if not path.exists():
+        return set()
+    kept, done = [], set()
+    lines = path.read_text(encoding="utf-8").splitlines()
+    for line in lines:
+        record = json.loads(line)
+        if record.get("prompt_hash") == fingerprint and record.get("model") == model:
+            kept.append(line)
+            done.add((record["id"], record["lang"]))
+    if len(kept) < len(lines):
+        print(
+            f"  {len(lines) - len(kept)} saved results used a different prompt: running them again"
+        )
+        path.write_text("".join(f"{line}\n" for line in kept), encoding="utf-8")
+    return done
+
+
 def gold_rows(db_path: Path, question: Question) -> list[list[list]]:
     conn = connect_readonly(db_path)
     try:
@@ -71,7 +100,12 @@ def gold_rows(db_path: Path, question: Question) -> list[list[list]]:
 
 
 def evaluate_one(
-    engine: TextToSQL, counter: CountingModel, question: Question, lang: str, db_path: Path
+    engine: TextToSQL,
+    counter: CountingModel,
+    question: Question,
+    lang: str,
+    db_path: Path,
+    fingerprint: str,
 ) -> dict:
     """Ask one question, waiting out per-minute rate limits, and score the answer."""
     status, sql, error, rows = "error", None, None, None
@@ -123,6 +157,7 @@ def evaluate_one(
         "latency_ms": latency_ms,
         "model": engine.model.client.model,
         "prompt_style": engine.prompt_style,
+        "prompt_hash": fingerprint,
         "run_at": datetime.now(UTC).isoformat(timespec="seconds"),
     }
 
@@ -142,17 +177,15 @@ def run_config(
 
     path = run_file(model, style)
     path.parent.mkdir(parents=True, exist_ok=True)
-    done = set()
-    if path.exists():
-        for line in path.read_text(encoding="utf-8").splitlines():
-            record = json.loads(line)
-            done.add((record["id"], record["lang"]))
+    fingerprint = prompt_fingerprint(style, settings.reasoning_effort)
+    print(f"\n{model} | prompt: {style} | fingerprint {fingerprint}")
+    done = keep_matching_results(path, model, fingerprint)
 
     todo = [(q, lang) for q in questions for lang in LANGUAGES if (q.id, lang) not in done]
-    print(f"\n{model} | prompt: {style} | {len(todo)} to run, {len(done)} already done")
+    print(f"  {len(todo)} to run, {len(done)} already done")
     for index, (question, lang) in enumerate(todo, start=1):
         started = time.perf_counter()
-        record = evaluate_one(engine, counter, question, lang, db_path)
+        record = evaluate_one(engine, counter, question, lang, db_path, fingerprint)
         with path.open("a", encoding="utf-8") as file:
             file.write(json.dumps(record, ensure_ascii=False) + "\n")
         mark = "correct" if record["correct"] else f"WRONG ({record['status']})"

@@ -1,0 +1,165 @@
+[
+  {
+    "id": "q01",
+    "category": "aggregation",
+    "en": "What are the total sales?",
+    "ar": "قديش مجموع المبيعات الكلي؟",
+    "gold": ["SELECT SUM(SALES) FROM sales"]
+  },
+  {
+    "id": "q02",
+    "category": "data trap",
+    "en": "How many orders are there?",
+    "ar": "كم طلبية عنا بالمجمل؟",
+    "gold": ["SELECT COUNT(DISTINCT ORDERNUMBER) FROM sales"]
+  },
+  {
+    "id": "q03",
+    "category": "aggregation",
+    "en": "How many different customers have placed orders?",
+    "ar": "كم زبون مختلف طلب منا؟",
+    "gold": ["SELECT COUNT(DISTINCT CUSTOMERNAME) FROM sales"]
+  },
+  {
+    "id": "q04",
+    "category": "grouping",
+    "en": "What are the total sales for each product line?",
+    "ar": "إجمالي المبيعات لكل خط منتجات",
+    "gold": ["SELECT PRODUCTLINE, SUM(SALES) FROM sales GROUP BY PRODUCTLINE"]
+  },
+  {
+    "id": "q05",
+    "category": "ranking",
+    "en": "Who are the top 5 customers by total sales?",
+    "ar": "مين أكثر 5 زباين من ناحية مجموع المبيعات؟",
+    "gold": [
+      "SELECT CUSTOMERNAME FROM sales GROUP BY CUSTOMERNAME ORDER BY SUM(SALES) DESC LIMIT 5"
+    ],
+    "ordered": true
+  },
+  {
+    "id": "q06",
+    "category": "ranking",
+    "en": "Which country had the highest sales in 2004?",
+    "ar": "أي دولة حققت أعلى مبيعات في 2004؟",
+    "gold": [
+      "SELECT COUNTRY FROM sales WHERE YEAR_ID = 2004 GROUP BY COUNTRY ORDER BY SUM(SALES) DESC LIMIT 1"
+    ]
+  },
+  {
+    "id": "q07",
+    "category": "data trap",
+    "en": "How many orders were cancelled?",
+    "ar": "كم طلبية انلغت؟",
+    "gold": ["SELECT COUNT(DISTINCT ORDERNUMBER) FROM sales WHERE STATUS = 'Cancelled'"]
+  },
+  {
+    "id": "q08",
+    "category": "data trap",
+    "en": "What were the total sales in North America?",
+    "ar": "قديش مبيعات أمريكا الشمالية؟",
+    "gold": ["SELECT SUM(SALES) FROM sales WHERE TERRITORY = 'NA'"]
+  },
+  {
+    "id": "q09",
+    "category": "dates",
+    "en": "Show the total sales for each month of 2004.",
+    "ar": "اعرض مجموع المبيعات لكل شهر في 2004",
+    "gold": [
+      "SELECT MONTH_ID, SUM(SALES) FROM sales WHERE YEAR_ID = 2004 GROUP BY MONTH_ID",
+      "SELECT strftime('%Y-%m', ORDERDATE), SUM(SALES) FROM sales WHERE YEAR_ID = 2004 GROUP BY 1"
+    ]
+  },
+  {
+    "id": "q10",
+    "category": "data trap",
+    "en": "What is the average order value?",
+    "ar": "قديش متوسط قيمة الطلبية؟",
+    "gold": ["SELECT SUM(SALES) / COUNT(DISTINCT ORDERNUMBER) FROM sales"]
+  },
+  {
+    "id": "q11",
+    "category": "filtering",
+    "en": "What were Classic Cars sales in the fourth quarter of 2003?",
+    "ar": "قديش مبيعات السيارات الكلاسيكية بالربع الرابع من 2003؟",
+    "gold": [
+      "SELECT SUM(SALES) FROM sales WHERE PRODUCTLINE = 'Classic Cars' AND YEAR_ID = 2003 AND QTR_ID = 4"
+    ]
+  },
+  {
+    "id": "q12",
+    "category": "filtering",
+    "en": "How many customers are based in Spain?",
+    "ar": "كم زبون موجود في إسبانيا؟",
+    "gold": ["SELECT COUNT(DISTINCT CUSTOMERNAME) FROM sales WHERE COUNTRY = 'Spain'"]
+  },
+  {
+    "id": "q13",
+    "category": "ranking",
+    "en": "Which product code sold the most units?",
+    "ar": "أي كود منتج انباع منه أكثر عدد قطع؟",
+    "gold": [
+      "SELECT PRODUCTCODE FROM sales GROUP BY PRODUCTCODE ORDER BY SUM(QUANTITYORDERED) DESC LIMIT 1"
+    ]
+  },
+  {
+    "id": "q14",
+    "category": "ranking",
+    "en": "Which city has the most orders?",
+    "ar": "أي مدينة فيها أكثر عدد طلبيات؟",
+    "gold": [
+      "SELECT CITY FROM sales GROUP BY CITY ORDER BY COUNT(DISTINCT ORDERNUMBER) DESC LIMIT 1"
+    ]
+  },
+  {
+    "id": "q15",
+    "category": "aggregation",
+    "en": "What percentage of total sales came from the USA?",
+    "ar": "شو نسبة مبيعات الولايات المتحدة من المبيعات الكلية؟",
+    "gold": [
+      "SELECT 100.0 * SUM(CASE WHEN COUNTRY = 'USA' THEN SALES ELSE 0 END) / SUM(SALES) FROM sales"
+    ]
+  },
+  {
+    "id": "q16",
+    "category": "grouping",
+    "en": "Which customers have total sales above 200,000?",
+    "ar": "مين الزباين اللي مجموع مشترياتهم أكثر من 200 ألف؟",
+    "gold": [
+      "SELECT CUSTOMERNAME FROM sales GROUP BY CUSTOMERNAME HAVING SUM(SALES) > 200000"
+    ]
+  },
+  {
+    "id": "q17",
+    "category": "dates",
+    "en": "Which month of 2003 had the highest sales?",
+    "ar": "أي شهر في 2003 كان فيه أعلى مبيعات؟",
+    "gold": [
+      "SELECT MONTH_ID FROM sales WHERE YEAR_ID = 2003 GROUP BY MONTH_ID ORDER BY SUM(SALES) DESC LIMIT 1",
+      "SELECT strftime('%Y-%m', ORDERDATE) FROM sales WHERE YEAR_ID = 2003 GROUP BY 1 ORDER BY SUM(SALES) DESC LIMIT 1"
+    ]
+  },
+  {
+    "id": "q18",
+    "category": "dates",
+    "en": "How many orders were placed on a Saturday or Sunday?",
+    "ar": "كم طلبية انعملت يوم سبت أو أحد؟",
+    "gold": [
+      "SELECT COUNT(DISTINCT ORDERNUMBER) FROM sales WHERE strftime('%w', ORDERDATE) IN ('0', '6')"
+    ]
+  },
+  {
+    "id": "q19",
+    "category": "unanswerable",
+    "en": "What is the profit for each product line?",
+    "ar": "قديش الربح لكل خط منتجات؟",
+    "gold": []
+  },
+  {
+    "id": "q20",
+    "category": "unanswerable",
+    "en": "Which sales rep closed the most deals?",
+    "ar": "مين مندوب المبيعات اللي سكّر أكثر صفقات؟",
+    "gold": []
+  }
+]

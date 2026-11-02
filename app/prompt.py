@@ -64,12 +64,13 @@ Rules:
 - The question may be in English or Arabic (Modern Standard Arabic or Jordanian dialect).
   Text values in the table are in English, so translate names of countries, cities,
   product lines and statuses to the English values used in the data.
-- Give result columns short, readable aliases in the language of the question.
-  Wrap Arabic aliases in double quotes.
+- Give result columns short English aliases in snake_case (for example total_sales),
+  even when the question is in Arabic.
 - For "top", "highest" or "most" questions, use ORDER BY with LIMIT.
 - Do not round numbers; the app formats them.
-- If the question cannot be answered from this table, reply with exactly: CANNOT_ANSWER
-- Reply with the SQL only, inside a ```sql code block. No explanation."""
+- If the question cannot be answered from this table, reply with one line:
+  CANNOT_ANSWER: <a short reason, in the language of the question>
+- Otherwise reply with the SQL only, inside a ```sql code block. No explanation."""
 
 DATA_NOTES = """Data notes:
 - One row is one order line (one product inside an order). An order has several rows,

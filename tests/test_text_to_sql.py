@@ -41,9 +41,11 @@ def test_unsafe_sql_is_never_retried(db_path):
     assert len(model.calls) == 1
 
 
-def test_unanswerable_question(db_path):
-    with pytest.raises(Unanswerable):
-        TextToSQL(FakeModel("CANNOT_ANSWER"), db_path).ask("What's the weather in Amman?")
+def test_unanswerable_question_keeps_the_models_reason(db_path):
+    model = FakeModel("CANNOT_ANSWER: There is no weather data.")
+    with pytest.raises(Unanswerable) as error:
+        TextToSQL(model, db_path).ask("What's the weather in Amman?")
+    assert error.value.reason == "There is no weather data."
 
 
 @pytest.mark.parametrize("question", ["", "   ", "x" * 301])

@@ -4,6 +4,7 @@ from app.sql_guard import (
     NoSQLFound,
     SQLExecutionError,
     UnsafeSQL,
+    cannot_answer_reason,
     extract_sql,
     run_query,
     validate_sql,
@@ -23,9 +24,25 @@ def test_extract_sql_handles_common_reply_shapes(reply):
     assert extract_sql(reply) == "SELECT 1"
 
 
-@pytest.mark.parametrize("reply", ["CANNOT_ANSWER", "```sql\nCANNOT_ANSWER\n```"])
-def test_extract_sql_returns_none_when_model_cannot_answer(reply):
+@pytest.mark.parametrize(
+    ("reply", "reason"),
+    [
+        ("CANNOT_ANSWER", ""),
+        ("```sql\nCANNOT_ANSWER\n```", ""),
+        (
+            "CANNOT_ANSWER: The table has no cost data, only sales with prices.",
+            "The table has no cost data, only sales with prices.",
+        ),
+        ("CANNOT_ANSWER: البيانات تبدأ من 2003.", "البيانات تبدأ من 2003."),
+    ],
+)
+def test_refusals_return_no_sql_and_keep_the_reason(reply, reason):
     assert extract_sql(reply) is None
+    assert cannot_answer_reason(reply) == reason
+
+
+def test_a_query_is_not_mistaken_for_a_refusal():
+    assert cannot_answer_reason("```sql\nSELECT 1\n```") is None
 
 
 def test_extract_sql_raises_when_reply_is_empty():

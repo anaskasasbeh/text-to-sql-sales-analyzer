@@ -103,7 +103,7 @@ def ask(body: AskRequest, request: Request) -> JSONResponse:
     except InvalidQuestion as error:
         return _error(400, "invalid_question", str(error))
     except Unanswerable as error:
-        return _error(422, "unanswerable", str(error))
+        return _error(422, "unanswerable", str(error), reason=error.reason)
     except UnsafeSQL as error:
         return _error(422, "unsafe_sql", str(error))
     except (NoSQLFound, SQLExecutionError) as error:

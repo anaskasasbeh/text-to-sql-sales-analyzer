@@ -101,3 +101,10 @@ def test_groq_daily_and_minute_limits_are_told_apart():
 def test_portfolio_can_read_the_health_check(client):
     response = client.get("/api/health", headers={"Origin": "https://anaskasasbeh.onrender.com"})
     assert response.headers["access-control-allow-origin"] == "https://anaskasasbeh.onrender.com"
+
+
+def test_unanswerable_questions_explain_why(client, db_path):
+    use_model(FakeModel("CANNOT_ANSWER: The data starts in January 2003."), db_path)
+    response = client.post("/api/ask", json={"question": "Profit in 2002?"})
+    assert response.status_code == 422
+    assert response.json()["reason"] == "The data starts in January 2003."

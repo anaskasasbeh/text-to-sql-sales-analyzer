@@ -60,23 +60,32 @@ _ALLOWED_ACTIONS = {
 }
 
 
+def _without_fences(reply: str) -> str:
+    text = reply.strip()
+    match = _FENCED.search(text)
+    if match:
+        return match.group(1).strip()
+    # No closed code block: drop a leftover opening or closing fence, if any.
+    return re.sub(r"^```[a-zA-Z]*", "", text).replace("```", "").strip()
+
+
+def cannot_answer_reason(reply: str) -> str | None:
+    """If the model refused, return its short reason ("" if it gave none). Else None."""
+    text = _without_fences(reply)
+    if not text.upper().startswith(CANNOT_ANSWER):
+        return None
+    return text[len(CANNOT_ANSWER) :].lstrip(" :-").strip()[:200]
+
+
 def extract_sql(reply: str) -> str | None:
     """Get the query out of the model's reply.
 
     Returns None when the model says the question cannot be answered.
     Raises NoSQLFound when there is no query in the reply.
     """
-    text = reply.strip()
-    match = _FENCED.search(text)
-    if match:
-        sql = match.group(1)
-    else:
-        # No closed code block: drop a leftover opening or closing fence, if any.
-        sql = re.sub(r"^```[a-zA-Z]*", "", text).replace("```", "")
-    sql = sql.strip().rstrip(";").strip()
-
-    if CANNOT_ANSWER in text.upper() and not re.search(r"\b(SELECT|WITH)\b", sql, re.IGNORECASE):
+    if cannot_answer_reason(reply) is not None:
         return None
+    sql = _without_fences(reply).rstrip(";").strip()
     if not sql:
         raise NoSQLFound("The model did not return a query.")
     return sql

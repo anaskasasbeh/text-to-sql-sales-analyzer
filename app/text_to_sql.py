@@ -13,6 +13,7 @@ from app.prompt import PromptStyle, build_fix_request, build_prompt
 from app.sql_guard import (
     NoSQLFound,
     SQLExecutionError,
+    cannot_answer_reason,
     extract_sql,
     run_query,
     validate_sql,
@@ -27,6 +28,10 @@ class InvalidQuestion(ValueError):
 
 class Unanswerable(ValueError):
     """The model said the question cannot be answered from this table."""
+
+    def __init__(self, reason: str = "") -> None:
+        super().__init__(reason or "This question can't be answered from the sales table.")
+        self.reason = reason
 
 
 class ChatModel(Protocol):
@@ -100,7 +105,7 @@ class TextToSQL:
             try:
                 sql = extract_sql(reply.text)
                 if sql is None:
-                    raise Unanswerable("This question can't be answered from the sales table.")
+                    raise Unanswerable(cannot_answer_reason(reply.text) or "")
                 validate_sql(sql)  # UnsafeSQL is raised to the caller, never retried.
                 result = run_query(self.db_path, sql, self.max_rows, self.query_timeout_seconds)
             except (NoSQLFound, SQLExecutionError) as error:

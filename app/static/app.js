@@ -65,7 +65,7 @@ const STRINGS = {
       ["7", "product lines"],
       ["2003–2005", "Jan 2003 to May 2005"],
     ],
-    dataNote: "Each row is one product inside an order. 8 of the 25 columns are shown; the others hold the customer's address and contact, unit price, deal size and sales territory.",
+    dataNote: "Each row is one product inside an order. Amounts are in US dollars. 8 of the 25 columns are shown; the others hold the customer's address and contact, unit price, deal size and sales territory.",
     notInDataTitle: "Not in the data:",
     notInData: "costs or profit, salespeople, stock levels, or anything before January 2003 or after May 2005.",
     footer: `<a href="${REPO_URL}">Code on GitHub</a>. Built by <a href="${PORTFOLIO_URL}">Anas Kasasbeh</a>. Data: <a href="${DATA_URL}">Sample Sales Data</a> (Kaggle, CC0).`,
@@ -127,7 +127,7 @@ const STRINGS = {
       ["7", "خطوط منتجات"],
       ["2003–2005", "من يناير 2003 إلى مايو 2005"],
     ],
-    dataNote: "كل صف هو منتج واحد داخل طلبية. يظهر هنا 8 أعمدة من أصل 25، والباقي فيه عنوان الزبون وجهة الاتصال وسعر القطعة وحجم الصفقة ومنطقة المبيعات.",
+    dataNote: "كل صف هو منتج واحد داخل طلبية، والمبالغ بالدولار الأمريكي. يظهر هنا 8 أعمدة من أصل 25، والباقي فيه عنوان الزبون وجهة الاتصال وسعر القطعة وحجم الصفقة ومنطقة المبيعات.",
     notInDataTitle: "غير موجود في البيانات:",
     notInData: "التكاليف أو الأرباح، ومندوبو المبيعات، والمخزون، وأي فترة قبل يناير 2003 أو بعد مايو 2005.",
     footer: `<a href="${REPO_URL}">الكود على GitHub</a>. من بناء <a href="${PORTFOLIO_URL}">أنس الكساسبة</a>. البيانات: <a href="${DATA_URL}">Sample Sales Data</a> (Kaggle، رخصة CC0).`,
@@ -187,6 +187,14 @@ function el(tag, className, text) {
   return node;
 }
 
+// Text from the data (often English inside the Arabic page): isolate its direction
+// so it reads correctly, while the cell keeps the page's alignment.
+function isolated(tag, className, text) {
+  const node = el(tag, className);
+  node.append(el("bdi", "", text));
+  return node;
+}
+
 function applyLanguage() {
   const html = document.documentElement;
   html.lang = lang;
@@ -243,7 +251,8 @@ function renderSample() {
   for (const row of SAMPLE_ROWS) {
     const tr = el("tr");
     row.forEach((value, i) => {
-      tr.append(el("td", isNumber(value) ? "num" : "", formatValue(value, SAMPLE_COLUMNS[i])));
+      const text = formatValue(value, SAMPLE_COLUMNS[i], { unit: false });
+      tr.append(el("td", isNumber(value) ? "num" : "", text));
     });
     body.append(tr);
   }
@@ -280,14 +289,56 @@ function isNumber(value) {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-function formatValue(value, column) {
+// What kind of number a column holds, guessed from its name (aliases are English snake_case).
+const PERCENT = /percent|pct/i;
+const MONEY = /sales|revenue|amount|price|msrp|value|spend|income/i;
+const NOT_MONEY = /count|number|qty|quantity|units/i;
+const PLAIN = /year|_id|number|code|month/i;
+
+function kindOf(column) {
+  if (PERCENT.test(column)) return "percent";
+  if (MONEY.test(column) && !NOT_MONEY.test(column)) return "money";
+  if (PLAIN.test(column)) return "plain";
+  return "number";
+}
+
+function formatMoney(value, compact) {
+  if (lang === "ar") {
+    const number = new Intl.NumberFormat("ar-u-nu-latn", compact
+      ? { notation: "compact", maximumFractionDigits: 1 }
+      : { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+    return `${number} دولار`;
+  }
+  return new Intl.NumberFormat("en-US", compact
+    ? { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 }
+    : { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }
+  ).format(value);
+}
+
+// compact: 912.3K instead of 912,294.11. unit: add $ or % to the value itself.
+function formatValue(value, column, { compact = false, unit = true } = {}) {
   if (value === null || value === undefined) return "—";
   if (!isNumber(value)) return String(value);
-  const plain = /year|_id|number|code|month/i.test(column);
-  if (Number.isInteger(value) && !/sales|revenue|total|amount|value/i.test(column)) {
-    return plain ? String(value) : value.toLocaleString("en-US");
+  const kind = kindOf(column);
+  if (kind === "plain") return String(value);
+  if (kind === "percent") {
+    const number = value.toLocaleString("en-US", { maximumFractionDigits: 2 });
+    return unit ? `${number}%` : number;
   }
+  if (kind === "money" && unit) return formatMoney(value, compact);
+  if (compact) {
+    const locale = lang === "ar" ? "ar-u-nu-latn" : "en-US";
+    return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
+  }
+  if (Number.isInteger(value) && kind !== "money") return value.toLocaleString("en-US");
   return value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Table headers carry the unit, so the cells stay short.
+function headerWithUnit(column) {
+  const kind = kindOf(column);
+  const unit = kind === "money" ? " ($)" : kind === "percent" ? " (%)" : "";
+  return prettyColumn(column) + unit;
 }
 
 // "total_sales" -> "Total sales". Other names are shown as they are.
@@ -320,29 +371,33 @@ function renderAnswerBody(data) {
     rows.every((r) => !isNumber(r[0]) && isNumber(r[1]) && r[1] >= 0);
   if (chartable) {
     const max = Math.max(...rows.map((r) => r[1])) || 1;
+    const heading = el("div", "bars-head");
+    heading.append(
+      el("span", "", prettyColumn(columns[0])),
+      el("span", "", prettyColumn(columns[1])),
+    );
     const list = el("ul", "bars");
     list.setAttribute("aria-label", `${prettyColumn(columns[0])} / ${prettyColumn(columns[1])}`);
     for (const [label, value] of rows) {
       const item = el("li");
-      const name = el("span", "bar-label", formatValue(label, columns[0]));
-      name.dir = "auto";
+      const name = isolated("span", "bar-label", formatValue(label, columns[0]));
       const track = el("span", "bar-track");
       const fill = el("span", "bar-fill");
       fill.style.width = `${(value / max) * 100}%`;
       track.append(fill);
-      item.append(name, track, el("span", "bar-value", formatValue(value, columns[1])));
+      const amount = el("span", "bar-value", formatValue(value, columns[1], { compact: true }));
+      amount.title = formatValue(value, columns[1]);
+      item.append(name, track, amount);
       list.append(item);
     }
-    box.append(list);
+    box.append(heading, list);
     return box;
   }
 
   const numeric = columns.map((_, i) => rows.every((r) => r[i] === null || isNumber(r[i])));
   const head = el("tr");
   columns.forEach((c, i) => {
-    const th = el("th", numeric[i] ? "num" : "", prettyColumn(c));
-    th.dir = "auto";
-    head.append(th);
+    head.append(isolated("th", numeric[i] ? "num" : "", headerWithUnit(c)));
   });
   const thead = el("thead");
   thead.append(head);
@@ -350,9 +405,8 @@ function renderAnswerBody(data) {
   for (const row of rows) {
     const tr = el("tr");
     row.forEach((value, i) => {
-      const td = el("td", isNumber(value) ? "num" : "", formatValue(value, columns[i]));
-      td.dir = "auto";
-      tr.append(td);
+      const text = formatValue(value, columns[i], { unit: false });
+      tr.append(isolated("td", isNumber(value) ? "num" : "", text));
     });
     body.append(tr);
   }

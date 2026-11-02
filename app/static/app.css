@@ -376,12 +376,23 @@ h1 {
   color: var(--ink-soft);
 }
 
+.bars-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.6rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+
 .bars {
   display: grid;
   grid-template-columns: minmax(6rem, max-content) 1fr auto;
   gap: 0.45rem 0.8rem;
   align-items: center;
-  margin: 0.6rem 0 0;
+  margin: 0.7rem 0 0;
   padding: 0;
   list-style: none;
 }
@@ -614,6 +625,29 @@ td.num {
   .facts {
     display: grid;
     grid-template-columns: 1fr 1fr;
+  }
+  /* Narrow screens: name and value on one line, the bar full width under them. */
+  .bars {
+    display: block;
+  }
+  .bars li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.25rem 0.75rem;
+    margin-bottom: 0.7rem;
+  }
+  .bar-label {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .bar-value {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .bar-track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: 0.55rem;
   }
 }
 

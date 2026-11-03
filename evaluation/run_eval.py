@@ -73,20 +73,23 @@ def prompt_fingerprint(style: PromptStyle, reasoning_effort: str) -> str:
 
 
 def keep_matching_results(path: Path, model: str, fingerprint: str) -> set[tuple[str, str]]:
-    """Drop saved results from another prompt or model; return the (id, lang) pairs kept."""
+    """Drop saved results from another prompt or model, or with no model call (an outage).
+
+    Returns the (id, lang) pairs that are kept, so they are not asked again.
+    """
     if not path.exists():
         return set()
     kept, done = [], set()
     lines = path.read_text(encoding="utf-8").splitlines()
     for line in lines:
         record = json.loads(line)
-        if record.get("prompt_hash") == fingerprint and record.get("model") == model:
+        same_setup = record.get("prompt_hash") == fingerprint and record.get("model") == model
+        # A result with no model call is an outage from an older run, not an answer.
+        if same_setup and record.get("calls", 1) > 0:
             kept.append(line)
             done.add((record["id"], record["lang"]))
     if len(kept) < len(lines):
-        print(
-            f"  {len(lines) - len(kept)} saved results used a different prompt: running them again"
-        )
+        print(f"  {len(lines) - len(kept)} saved results are outdated or incomplete; asking again")
         path.write_text("".join(f"{line}\n" for line in kept), encoding="utf-8")
     return done
 
@@ -106,8 +109,12 @@ def evaluate_one(
     lang: str,
     db_path: Path,
     fingerprint: str,
-) -> dict:
-    """Ask one question, waiting out per-minute rate limits, and score the answer."""
+) -> dict | None:
+    """Ask one question, waiting out per-minute rate limits, and score the answer.
+
+    Returns None if the model could not be reached at all: that is an outage, not a
+    wrong answer, so nothing is saved and the next run asks the question again.
+    """
     status, sql, error, rows = "error", None, None, None
     for _ in range(6):
         counter.reset()
@@ -131,6 +138,8 @@ def evaluate_one(
             time.sleep(20)
             continue
         break
+    else:
+        return None
     latency_ms = round((time.perf_counter() - started) * 1000)
 
     if question.answerable:
@@ -186,6 +195,9 @@ def run_config(
     for index, (question, lang) in enumerate(todo, start=1):
         started = time.perf_counter()
         record = evaluate_one(engine, counter, question, lang, db_path, fingerprint)
+        if record is None:
+            print(f"  [{index:>2}/{len(todo)}] {question.id} {lang}: skipped, model unreachable")
+            continue
         with path.open("a", encoding="utf-8") as file:
             file.write(json.dumps(record, ensure_ascii=False) + "\n")
         mark = "correct" if record["correct"] else f"WRONG ({record['status']})"

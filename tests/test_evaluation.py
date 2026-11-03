@@ -2,7 +2,9 @@ import json
 
 import pytest
 
+import evaluation.run_eval as run_eval
 from app.database import connect_readonly
+from app.llm import LLMUnavailable
 from app.sql_guard import validate_sql
 from evaluation.compare import load_questions, normalize, results_match
 from evaluation.report import build_report
@@ -90,9 +92,23 @@ def test_results_from_another_prompt_are_run_again(tmp_path):
         {"id": "q01", "lang": "en", "model": "m", "prompt_hash": current},
         {"id": "q02", "lang": "en", "model": "m", "prompt_hash": "old-prompt"},
         {"id": "q03", "lang": "en", "model": "m"},  # saved before fingerprints existed
+        {"id": "q04", "lang": "en", "model": "m", "prompt_hash": current, "calls": 0},  # outage
     ]
     path = tmp_path / "run.jsonl"
     path.write_text("".join(json.dumps(line) + "\n" for line in lines), encoding="utf-8")
 
     assert keep_matching_results(path, "m", current) == {("q01", "en")}
     assert len(path.read_text(encoding="utf-8").splitlines()) == 1
+
+
+def test_an_outage_is_not_scored_as_a_wrong_answer(monkeypatch, db_path):
+    class Unreachable:
+        prompt_style = "full"
+
+        def ask(self, question):
+            raise LLMUnavailable("connection reset")
+
+    monkeypatch.setattr(run_eval.time, "sleep", lambda seconds: None)
+    counter = run_eval.CountingModel(client=None)
+    record = run_eval.evaluate_one(Unreachable(), counter, QUESTIONS[0], "en", db_path, "abc")
+    assert record is None
